@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"time"
 
 	"golang.org/x/image/colornames"
 
@@ -34,21 +35,22 @@ type Game struct {
 	player Player
 	coins  []Coin
 	score  int
+	scene  string
 }
 
-func (g *Game) update(screen *ebiten.Image) error {
+func (g *Game) updateGame(screen *ebiten.Image) error {
 	// Movement
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		g.player.Rect = g.player.Moved(gfx.V(-2, 0))
+		g.player.Rect = g.player.Moved(gfx.V(-4, 0))
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		g.player.Rect = g.player.Moved(gfx.V(2, 0))
+		g.player.Rect = g.player.Moved(gfx.V(4, 0))
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
-		g.player.Rect = g.player.Moved(gfx.V(0, -2))
+		g.player.Rect = g.player.Moved(gfx.V(0, -4))
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		g.player.Rect = g.player.Moved(gfx.V(0, 2))
+		g.player.Rect = g.player.Moved(gfx.V(0, 4))
 	}
 
 	// Check collision
@@ -61,8 +63,12 @@ func (g *Game) update(screen *ebiten.Image) error {
 
 			// "Remove" coin
 			g.coins[i].value = 0
-
 			g.coins = append(g.coins, newRandomCoin())
+
+			if g.score > 100 {
+				g.scene = "win"
+				return nil
+			}
 		}
 	}
 
@@ -81,6 +87,42 @@ func (g *Game) update(screen *ebiten.Image) error {
 
 	// Draw score
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Money $%d", g.score), 5, 5)
+	return nil
+}
+
+func (g *Game) updateWin(screen *ebiten.Image) error {
+	if ebiten.IsKeyPressed(ebiten.KeyR) {
+		g.score = 0
+		g.scene = "game"
+	}
+	ebitenutil.DebugPrintAt(screen, "    YOU WON!!!!", 120, 190)
+	if time.Now().Second()%2 == 0 {
+		ebitenutil.DebugPrintAt(screen, "Press R to restart", 120, 220)
+	}
+	return nil
+}
+
+func (g *Game) updateStart(screen *ebiten.Image) error {
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		g.score = 0
+		g.scene = "game"
+	}
+	ebitenutil.DebugPrintAt(screen, "Welcome to Gopher Coin Catcher", 120, 190)
+	if time.Now().Second()%2 == 0 {
+		ebitenutil.DebugPrintAt(screen, "     Press Space to start", 120, 220)
+	}
+	return nil
+}
+
+func (g *Game) update(screen *ebiten.Image) error {
+	switch g.scene {
+	case "game":
+		return g.updateGame(screen)
+	case "win":
+		return g.updateWin(screen)
+	case "start":
+		return g.updateStart(screen)
+	}
 	return nil
 }
 
@@ -115,6 +157,7 @@ func main() {
 			img:  img,
 		},
 		coins: []Coin{newRandomCoin(), newRandomCoin()},
+		scene: "start",
 	}
 
 	ebiten.SetFullscreen(true)
