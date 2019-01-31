@@ -117,6 +117,7 @@ func main() {
 		coins: []Coin{newRandomCoin(), newRandomCoin()},
 	}
 
+	ebiten.SetFullscreen(true)
 	if err := ebiten.Run(g.update, screenWidth, screenHeight, 2, "game tutorial"); err != nil {
 		log.Fatal(err)
 	}
